@@ -19,8 +19,6 @@ jobs:
           for chart in manifests/*
           do
             echo ">>> Validating $chart"
-                kube-score score $chart | docker run -i zegl/kube-score:latest score \
-              --ignore-test=pod-networkpolicy \
-              --ignore-test=deployment-has-poddisruptionbudget \
-              -
+                kube-score score $chart | docker run -i zegl/kube-score:latest score
+            -
           done
