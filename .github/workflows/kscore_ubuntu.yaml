@@ -16,7 +16,7 @@ jobs:
 
       - name: Run kube-score
         run: |
-          for chart in '/*.yaml'
+          for chart in /*
           do
             echo ">>> Validating $chart"
             helm template $chart | docker run -i zegl/kube-score:latest score \
