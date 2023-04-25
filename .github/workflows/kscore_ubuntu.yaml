@@ -20,5 +20,4 @@ jobs:
           do
             echo ">>> Validating $chart"
                 kube-score score $chart | docker run -i zegl/kube-score:latest score
-            -
           done
