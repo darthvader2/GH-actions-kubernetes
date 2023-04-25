@@ -1,6 +1,6 @@
 name: kube_score_test_2
 
-on: [push, workflow_dispatch]
+on: [push, workflow_dispatch, pull_request]
 
 jobs:
   kube-score:
