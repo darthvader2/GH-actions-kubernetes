@@ -15,4 +15,4 @@ jobs:
       - name: kube-score-test
         uses: piraces/kube-score-ga@v0.1.3
         with:
-          manifests-folders: './*.yaml'
+          manifests-folders: './manifests/*.yaml'
