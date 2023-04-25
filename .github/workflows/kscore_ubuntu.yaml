@@ -1,0 +1,26 @@
+name: Validate charts
+
+on:
+    push:
+      branches:
+        - main
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run kube-score
+        run: |
+          for chart in '/*.yaml'
+          do
+            echo ">>> Validating $chart"
+            helm template $chart | docker run -i zegl/kube-score:latest score \
+              --ignore-test=pod-networkpolicy \
+              --ignore-test=deployment-has-poddisruptionbudget \
+              -
+          done
