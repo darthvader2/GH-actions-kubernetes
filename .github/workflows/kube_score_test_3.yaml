@@ -16,6 +16,6 @@ jobs:
                 chmod +x ./kube-score && \
                 for file in manifests/*.yaml; do
                 echo "$file"  
-                ./kube-score score $file
+                ./kube-score score $file --exit-one-on-warning
                 done
                 
