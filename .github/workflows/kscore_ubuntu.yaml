@@ -19,7 +19,7 @@ jobs:
           for chart in manifests/*
           do
             echo ">>> Validating $chart"
-            helm template $chart | docker run -i zegl/kube-score:latest score \
+                kube-score score $chart | docker run -i zegl/kube-score:latest score \
               --ignore-test=pod-networkpolicy \
               --ignore-test=deployment-has-poddisruptionbudget \
               -
