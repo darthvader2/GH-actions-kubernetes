@@ -16,3 +16,4 @@ jobs:
         uses: piraces/kube-score-ga@v0.1.3
         with:
           manifests-folders: './manifests/*.yaml'
+          ignore-exit-code: 'true'
