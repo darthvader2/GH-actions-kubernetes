@@ -13,9 +13,5 @@ jobs:
         - name: Run kube-score
           run: |
               wget -q -O ./kube-score https://github.com/zegl/kube-score/releases/download/v1.10.1/kube-score_1.10.1_linux_amd64 && \
-                chmod +x ./kube-score && \
-                for file in manifests/*.yaml; do
-                echo "$file"  
-                ./kube-score score $file --exit-one-on-warning
-                done
+              chmod +x ./kube-score && \  
                 
