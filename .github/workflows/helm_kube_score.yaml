@@ -1,18 +1,30 @@
-name: helm_kube_score
+name: helm-kube-score-test-workflow
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-on: [push, workflow_dispatch, pull_request]
-
-jobs:
-  kube-score:
-    runs-on: ubuntu-latest
-    steps:
-        - name: Checkout
-          uses: actions/checkout@v3
-          with:
-            fetch-depth: 0
-        - name: Run kube-score
-          run: |
-            wget https://github.com/zegl/kube-score/releases/download/v1.11.0/kube-score_1.11.0_linux_amd64
-            chmod 755 kube-score_1.11.0_linux_amd64
-            cd hello-world
-            helm template hello-world .  | ./kube-score score - 
+      jobs:
+        test-action-helm-job-linux:
+          runs-on: ubuntu-latest
+          name: kube-score Helm (Linux)
+          steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - uses: azure/setup-helm@v3
+              name: Setup Helm
+              with:
+            - name: Make temporal output directory
+              run: mkdir -p out/helm
+            - name: Helm Template to standard template
+              run: helm template ./hello-world > ./out/helm/sample-helm.yaml
+            - name: kube-score action step
+              uses: ./ # Uses an action in the root directory
+              id: ksga
+              with:
+                manifests-folders: './out/helm/*.yaml'
+                ignore-exit-code: 'true'
+                kube-score-version: '1.14.0'
