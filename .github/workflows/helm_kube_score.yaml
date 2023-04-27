@@ -15,4 +15,4 @@ jobs:
             wget https://github.com/zegl/kube-score/releases/download/v1.11.0/kube-score_1.11.0_linux_amd64
             chmod 755 kube-score_1.11.0_linux_amd64
             cd hello-world
-            helm template hello-world .  | kube-score score - 
+            helm template hello-world .  | ./kube-score score - 
