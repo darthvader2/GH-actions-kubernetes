@@ -1,28 +1,1777 @@
-# Default values for hello-world.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+---
+# Source: cytomine/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cytomine
+  labels:
+    helm.sh/chart: cytomine-0.2.0
+    app.kubernetes.io/name: cytomine
+    app.kubernetes.io/instance: cytomine
+    app.kubernetes.io/version: "v3.2.3"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: cytomine/templates/core/core-config.yaml
+# generate secrets that can be shared in the configs
 
-replicaCount: 1
 
-image:
-  repository: nginx
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cytomine-core-config
+stringData:
+  cytomineconfig.groovy: |-
+    dataSource.url="jdbc:postgresql://cytomine-postgis:5432/docker"
+    dataSource.username="docker"
+    dataSource.password="docker"
 
-nameOverride: ""
-fullnameOverride: ""
+    cytomine.customUI.global = [
+            dashboard: ["ALL"],
+            search : ["ROLE_ADMIN"],
+            project: ["ALL"],
+            ontology: ["ROLE_ADMIN"],
+            storage : ["ROLE_USER","ROLE_ADMIN"],
+            activity : ["ALL"],
+            feedback : ["ROLE_USER","ROLE_ADMIN"],
+            explore : ["ROLE_USER","ROLE_ADMIN"],
+            admin : ["ROLE_ADMIN"],
+            help : ["ALL"]
+    ]
 
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
 
-service:
-  type: ClusterIP
-  port: 80
-  user: dummy2
+    grails.serverURL="http://cytomine.test"
+    grails.imageServerURL=["http://cytomine-ims:8081"]
+    grails.uploadURL="http://cytomine.test"
+
+    storage_buffer="/data/images/_buffer"
+    storage_path="/data/images"
+
+    grails.adminPassword="btYlJSOw10wc"
+    grails.adminPrivateKey="bf3e06fb-4cf9-406c-8af9-aea13a5cec11"
+    grails.adminPublicKey="174597cd-7e60-4a2f-9d91-b4e8f8c67f83"
+    grails.superAdminPrivateKey="fbdda59c-fa9f-47de-9626-58cb72e04673"
+    grails.superAdminPublicKey="073c07e6-05c2-440a-9560-c6f0ff3ebdbd"
+    grails.ImageServerPrivateKey="b94c3f51-1276-443a-a4f3-ff9167146057"
+    grails.ImageServerPublicKey="142a0b40-d25f-4c6c-80aa-b02bc0b298d0"
+    grails.rabbitMQPrivateKey="4a382c09-de7f-4663-b0e0-c754dd374385"
+    grails.rabbitMQPublicKey="b7ae1470-1314-44a3-80c3-98be5efb37f5"
+
+    grails.notification.email="your.email@gmail.com"
+    grails.notification.password=""
+    grails.notification.smtp.host="smtp.gmail.com"
+    grails.notification.smtp.port=""
+    grails.admin.email="info@cytomine.coop"
+
+    grails.mongo.host = "cytomine-mongodb"
+    grails.mongo.options.connectionsPerHost=10
+    grails.mongo.options.threadsAllowedToBlockForConnectionMultiplier=5
+
+    grails.messageBrokerServerURL="cytomine-rabbitmq:5672"
+
+    grails.serverID="9e57eb6e-aa19-4b73-aa64-8cbb593b8393"
+  server.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!--
+      Licensed to the Apache Software Foundation (ASF) under one or more
+      contributor license agreements.  See the NOTICE file distributed with
+      this work for additional information regarding copyright ownership.
+      The ASF licenses this file to You under the Apache License, Version 2.0
+      (the "License"); you may not use this file except in compliance with
+      the License.  You may obtain a copy of the License at
+    
+          http://www.apache.org/licenses/LICENSE-2.0
+    
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+    -->
+    <!-- Note:  A "Server" is not itself a "Container", so you may not
+         define subcomponents such as "Valves" at this level.
+         Documentation at /docs/config/server.html
+     -->
+    <Server port="8005" shutdown="SHUTDOWN">
+      <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+      <!-- Security listener. Documentation at /docs/config/listeners.html
+      <Listener className="org.apache.catalina.security.SecurityListener" />
+      -->
+      <!-- APR library loader. Documentation at /docs/apr.html -->
+      <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+      <!-- Prevent memory leaks due to use of particular java/javax APIs-->
+      <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+      <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+      <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+    
+      <!-- Global JNDI resources
+           Documentation at /docs/jndi-resources-howto.html
+      -->
+      <GlobalNamingResources>
+        <!-- Editable user database that can also be used by
+             UserDatabaseRealm to authenticate users
+        -->
+        <Resource name="UserDatabase" auth="Container"
+                  type="org.apache.catalina.UserDatabase"
+                  description="User database that can be updated and saved"
+                  factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+                  pathname="conf/tomcat-users.xml" />
+      </GlobalNamingResources>
+    
+      <!-- A "Service" is a collection of one or more "Connectors" that share
+           a single "Container" Note:  A "Service" is not itself a "Container",
+           so you may not define subcomponents such as "Valves" at this level.
+           Documentation at /docs/config/service.html
+       -->
+      <Service name="Catalina">
+    
+        <!--The connectors can use a shared executor, you can define one or more named thread pools-->
+        <!--
+        <Executor name="tomcatThreadPool" namePrefix="catalina-exec-"
+            maxThreads="150" minSpareThreads="4"/>
+        -->
+    
+    
+        <!-- A "Connector" represents an endpoint by which requests are received
+             and responses are returned. Documentation at :
+             Java HTTP Connector: /docs/config/http.html
+             Java AJP  Connector: /docs/config/ajp.html
+             APR (HTTP/AJP) Connector: /docs/apr.html
+             Define a non-SSL/TLS HTTP/1.1 Connector on port 8080
+        -->
+        <Connector port="8080" protocol="HTTP/1.1"
+                   connectionTimeout="20000"
+                   relaxedPathChars="[]|"
+                   relaxedQueryChars='[]|{}^`"'
+                   redirectPort="8443" />
+        <!-- A "Connector" using the shared thread pool-->
+        <!--
+        <Connector executor="tomcatThreadPool"
+                   port="8080" protocol="HTTP/1.1"
+                   connectionTimeout="20000"
+                   redirectPort="8443" />
+        -->
+        <!-- Define an SSL/TLS HTTP/1.1 Connector on port 8443
+             This connector uses the NIO implementation. The default
+             SSLImplementation will depend on the presence of the APR/native
+             library and the useOpenSSL attribute of the
+             AprLifecycleListener.
+             Either JSSE or OpenSSL style configuration may be used regardless of
+             the SSLImplementation selected. JSSE style configuration is used below.
+        -->
+        <!--
+        <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+                   maxThreads="150" SSLEnabled="true">
+            <SSLHostConfig>
+                <Certificate certificateKeystoreFile="conf/localhost-rsa.jks"
+                             type="RSA" />
+            </SSLHostConfig>
+        </Connector>
+        -->
+        <!-- Define an SSL/TLS HTTP/1.1 Connector on port 8443 with HTTP/2
+             This connector uses the APR/native implementation which always uses
+             OpenSSL for TLS.
+             Either JSSE or OpenSSL style configuration may be used. OpenSSL style
+             configuration is used below.
+        -->
+        <!--
+        <Connector port="8443" protocol="org.apache.coyote.http11.Http11AprProtocol"
+                   maxThreads="150" SSLEnabled="true" >
+            <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
+            <SSLHostConfig>
+                <Certificate certificateKeyFile="conf/localhost-rsa-key.pem"
+                             certificateFile="conf/localhost-rsa-cert.pem"
+                             certificateChainFile="conf/localhost-rsa-chain.pem"
+                             type="RSA" />
+            </SSLHostConfig>
+        </Connector>
+        -->
+    
+        <!-- Define an AJP 1.3 Connector on port 8009 -->
+        <!--
+        <Connector protocol="AJP/1.3"
+                   address="::1"
+                   port="8009"
+                   redirectPort="8443" />
+        -->
+    
+        <!-- An Engine represents the entry point (within Catalina) that processes
+             every request.  The Engine implementation for Tomcat stand alone
+             analyzes the HTTP headers included with the request, and passes them
+             on to the appropriate Host (virtual host).
+             Documentation at /docs/config/engine.html -->
+    
+        <!-- You should set jvmRoute to support load-balancing via AJP ie :
+        <Engine name="Catalina" defaultHost="localhost" jvmRoute="jvm1">
+        -->
+        <Engine name="Catalina" defaultHost="localhost">
+    
+          <!--For clustering, please take a look at documentation at:
+              /docs/cluster-howto.html  (simple how to)
+              /docs/config/cluster.html (reference documentation) -->
+          <!--
+          <Cluster className="org.apache.catalina.ha.tcp.SimpleTcpCluster"/>
+          -->
+    
+          <!-- Use the LockOutRealm to prevent attempts to guess user passwords
+               via a brute-force attack -->
+          <Realm className="org.apache.catalina.realm.LockOutRealm">
+            <!-- This Realm uses the UserDatabase configured in the global JNDI
+                 resources under the key "UserDatabase".  Any edits
+                 that are performed against this UserDatabase are immediately
+                 available for use by the Realm.  -->
+            <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+                   resourceName="UserDatabase"/>
+          </Realm>
+    
+          <Host name="localhost"  appBase="webapps"
+                unpackWARs="true" autoDeploy="true">
+    
+            <!-- SingleSignOn valve, share authentication between web applications
+                 Documentation at: /docs/config/valve.html -->
+            <!--
+            <Valve className="org.apache.catalina.authenticator.SingleSignOn" />
+            -->
+    
+            <!-- Access log processes all example.
+                 Documentation at: /docs/config/valve.html
+                 Note: The pattern used is equivalent to using pattern="common" -->
+            <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
+                   prefix="localhost_access_log" suffix=".txt"
+                   pattern="%h %l %u %t &quot;%r&quot; %s %b" />
+    
+          </Host>
+        </Engine>
+      </Service>
+    </Server>
+---
+# Source: cytomine/templates/core/core-config.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cytomine-ims-config
+stringData:
+  ims-config.groovy: |-
+    cytomine.ims.server.url = "http://cytomine-ims:8081"
+    cytomine.ims.server.core.url = "http://cytomine.test"
+    cytomine.ims.server.publicKey = "142a0b40-d25f-4c6c-80aa-b02bc0b298d0"
+    cytomine.ims.server.privateKey = "b94c3f51-1276-443a-a4f3-ff9167146057"
+
+    cytomine.ims.path.buffer = "/data/images/_buffer"
+    cytomine.ims.path.storage = "/data/images"
+
+    cytomine.ims.conversion.bioformats.enabled = true
+    cytomine.ims.conversion.bioformats.hostname = "cytomine-bioformat"
+    cytomine.ims.conversion.bioformats.port = 4321
+
+    cytomine.ims.pyramidalTiff.iip.url = "http://cytomine-iip-official:8083/fcgi-bin/iipsrv.fcgi"
+    cytomine.ims.openslide.iip.url = "http://cytomine-iip-cyto:8084/fcgi-bin/iipsrv.fcgi"
+
+    //cytomine.ims.jpeg2000.iip.url = "http://localhost-iip-jp2000/fcgi-bin/iipsrv.fcgi"
+
+    cytomine.ims.jpeg2000.enabled = false
+---
+# Source: cytomine/templates/core/core-config.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cytomine-k8s-software-router-secret
+type: Opaque
+stringData:
+  settings.yaml: |-
+    name: local-server
+    core:
+      url: "cytomine.test"
+      public_key: "b7ae1470-1314-44a3-80c3-98be5efb37f5"
+      private_key: "4a382c09-de7f-4663-b0e0-c754dd374385"
+      protocol: "http"
+    rabbitmq:
+      host: "cytomine-rabbitmq"
+      port: "5672"
+      username: 'router'
+      password: 'router'
+      exchange: "exchangeCommunication"
+      queue: "queueCommunication"
+    github:
+      username: ""
+      password: ""
+    serviceaccount: cytomine
+    software_repos:
+      - cytomine
+---
+# Source: cytomine/templates/rabbitmq/rabbitmq-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cytomine-rabbitmq-secret
+type: Opaque
+data:
+  init.sh: |-
+    
+    IyEvYmluL2Jhc2gKCiggcmFiYml0bXFjdGwgd2FpdCAtdCA2MCAkUkFCQklUTVFfUElEX0ZJTEU7IFwKICAgIHJhYmJpdG1xY3RsIGFkZF91c2VyIHJvdXRlciByb3V0ZXIgMj4vZGV2L251bGw7IFwKICAgIHJhYmJpdG1xY3RsIHNldF91c2VyX3RhZ3Mgcm91dGVyIGFkbWluaXN0cmF0b3I7IFwKICAgIHJhYmJpdG1xY3RsIHNldF9wZXJtaXNzaW9ucyAtcCAvIHJvdXRlciAiLioiICIuKiIgIi4qIjsKKSAmCgplY2hvICJTdGFydGluZyByYWJiaXRtcSBzZXJ2ZXIiCnJhYmJpdG1xLXNlcnZlcgo=
+---
+# Source: cytomine/templates/iip/iip-cyto-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cytomine-iip-cyto-config
+data:
+  nginx.conf.sample: |-
+    
+    
+    #user  nobody;
+    worker_processes  1;
+    daemon off;
+    
+    
+    events {
+        worker_connections  1024;
+    }
+    
+    
+    http {
+    	include       mime.types;
+    	default_type  application/octet-stream;
+    
+    	sendfile        on;
+    
+    	keepalive_timeout  65;
+    
+    	upstream iip-up {
+            	least_conn;
+    IIP_PROCESS
+    	}
+    
+    	server {
+            	listen 8084;
+    			server_name cytomine-iip-cyto;
+            	location /fcgi-bin/iipsrv.fcgi {
+                    	add_header Access-Control-Allow-Origin *;
+                   		fastcgi_pass    iip-up;
+                    	fastcgi_param   PATH_INFO $fastcgi_script_name;
+                    	fastcgi_param   REQUEST_METHOD $request_method;
+                    	fastcgi_param   QUERY_STRING $query_string;
+                    	fastcgi_param   CONTENT_TYPE $content_type;
+                    	fastcgi_param   CONTENT_LENGTH $content_length;
+    		}
+    	}
+    }
+---
+# Source: cytomine/templates/iip/iip-official-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cytomine-iip-official-config
+data:
+  nginx.conf.sample: |-
+    
+    
+    #user  nobody;
+    worker_processes  1;
+    daemon off;
+    
+    
+    events {
+        worker_connections  1024;
+    }
+    
+    
+    http {
+    	include       mime.types;
+    	default_type  application/octet-stream;
+    
+    	sendfile        on;
+    
+    	keepalive_timeout  65;
+    
+    	upstream iip-up {
+            	least_conn;
+    IIP_PROCESS
+    	}
+    
+    	server {
+            	listen 8083;
+    		    server_name cytomine-iip-official;
+            	location /fcgi-bin/iipsrv.fcgi {
+                    	add_header Access-Control-Allow-Origin *;
+                   		fastcgi_pass    iip-up;
+                    	fastcgi_param   PATH_INFO $fastcgi_script_name;
+                    	fastcgi_param   REQUEST_METHOD $request_method;
+                    	fastcgi_param   QUERY_STRING $query_string;
+                    	fastcgi_param   CONTENT_TYPE $content_type;
+                    	fastcgi_param   CONTENT_LENGTH $content_length;
+    		}
+    	}
+    }
+---
+# Source: cytomine/templates/memcached/memcached-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cytomine-memcached-config
+data:
+  memcached.conf: |-
+    
+    # memcached default config file
+    # 2003 - Jay Bonci <jaybonci@debian.org>
+    # This configuration file is read by the start-memcached script provided as
+    # part of the Debian GNU/Linux distribution.
+    
+    # Run memcached as a daemon. This command is implied, and is not needed for the
+    # daemon to run. See the README.Debian that comes with this package for more
+    # information.
+    -d
+    
+    # Log memcached's output to /var/log/memcached
+    logfile /var/log/memcached.log
+    
+    # Be verbose
+    # -v
+    
+    # Be even more verbose (print client commands as well)
+    # -vv
+    
+    # Start with a cap of 64 megs of memory. It's reasonable, and the daemon default
+    # Note that the daemon will grow to this size, but does not start out holding this much
+    # memory
+    -m 64
+    
+    # Default connection port is 11211
+    -p 11211
+    
+    # Run the daemon as root. The start-memcached will default to running as root if no
+    # -u command is present in this config file
+    -u memcache
+    
+    # Specify which IP address to listen on. The default is to listen on all IP addresses
+    # This parameter is one of the only security measures that memcached has, so make sure
+    # it's listening on a firewalled interface.
+    -l 0.0.0.0
+    
+    # Limit the number of simultaneous incoming connections. The daemon default is 1024
+    # -c 1024
+    
+    # Lock down all paged memory. Consult with the README and homepage before you do this
+    # -k
+    
+    # Return error when memory is exhausted (rather than removing items)
+    # -M
+    
+    # Maximize core file limit
+    # -r
+---
+# Source: cytomine/templates/nginx/nginx-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cytomine-nginx-config
+data:
+  nginx.conf: |-
+    
+    #
+    # Copyright (c) 2009-2020. Authors: see NOTICE file.
+    #
+    # Licensed under the Apache License, Version 2.0 (the "License");
+    # you may not use this file except in compliance with the License.
+    # You may obtain a copy of the License at
+    #
+    #      http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing, software
+    # distributed under the License is distributed on an "AS IS" BASIS,
+    # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    # See the License for the specific language governing permissions and
+    # limitations under the License.
+    #
+    
+    worker_processes  1;
+    daemon off;
+    error_log  logs/error.log;
+    
+    
+    events {
+        worker_connections  1024;
+    }
+    
+    
+    http {
+        include       mime.types;
+        default_type  application/octet-stream;
+        server_names_hash_bucket_size  128;
+        server_tokens off;
+    
+        log_format  main  '$host - $remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+    
+        access_log  logs/access.log  main;
+    
+        sendfile        on;
+    
+        keepalive_timeout  120;
+        proxy_connect_timeout 75;
+    
+        large_client_header_buffers 4 16k;
+    
+        server {
+            client_max_body_size 0;
+            listen       8000;
+            server_name  cytomine.test;
+    
+    
+            
+            location / {
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Host $host;
+                proxy_pass http://cytomine-web-ui:8080;
+            }
+            
+            
+            location /api {
+                proxy_intercept_errors off;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Host $host;
+                proxy_pass http://cytomine-core:8001;
+            }
+            location /j_spring_security { # check and logout
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Host $host;
+                proxy_pass http://cytomine-core:8001;
+            }
+            location ~ /(login|logout) {
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Host $host;
+                proxy_pass http://cytomine-core:8001;
+            }
+            location ~ /(server|session|custom-ui|static) {
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Host $host;
+                proxy_pass http://cytomine-core:8001;
+            }
+            location ~ /(restApiDoc|js/jsondoc|css/jsondoc) {
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Host $host;
+                proxy_pass http://cytomine-core:8001;
+            }
+            
+    
+            proxy_intercept_errors on;
+    
+            error_page 404 = /cytomine-page-not-found;
+            location /cytomine-page-not-found {
+                default_type "text/html";
+                alias /opt/nginx/nginx-1.10.1/html/404.html;
+            }
+    
+            
+            # Upload form should be submitted to this location
+            location /upload {
+                proxy_read_timeout 600;
+                # Pass altered request body to this location
+                upload_pass   @ims;
+                # Store files to this directory
+                # The directory is hashed, subdirectories 0 1 2 3 4 5 6 7 8 9 should exist
+                upload_store /tmp/uploaded;
+    
+                # Allow uploaded files to be read only by user
+                upload_store_access user:rw group:rw all:rw;
+    
+                # Set specified fields in request body
+                upload_set_form_field $upload_field_name.name "$upload_file_name";
+                upload_set_form_field $upload_field_name.content_type "$upload_content_type";
+                upload_set_form_field $upload_field_name.path "$upload_tmp_path";
+    
+                # Inform backend about hash and size of a file
+                upload_aggregate_form_field "$upload_field_name.md5" "$upload_file_md5";
+                upload_aggregate_form_field "$upload_field_name.size" "$upload_file_size";
+                upload_pass_form_field "^submit$|^description$";
+    
+                upload_pass_args on;
+    
+                add_header 'Access-Control-Allow-Credentials' 'false';
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+                add_header 'Access-Control-Allow-Headers' 'Content-Type, Content-Range, Content-Disposition, Content-Description, date, dateFull, authorization,content-type-full';
+                add_header 'Access-Control-Max-Age' '1728000';
+                add_header 'Access-Control-Allow-Origin' '*';
+            }
+            # ims proxy used for downloading and working with images
+            location /image {
+                proxy_intercept_errors off;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Host $host;
+                proxy_pass http://cytomine-ims:8081;
+            }
+            # Pass altered request body to a backend
+            location @ims {
+                add_header 'Access-Control-Allow-Origin' '*';
+                proxy_pass   http://cytomine-ims:8081;
+                proxy_read_timeout 600;
+            }
+            
+            error_page   500 502 503 504  /50x.html;
+            location = /50x.html {
+                root   html;
+            }
+        }
+        
+        server {
+            client_max_body_size 0;
+            listen       80;
+            server_name  cytomine-iip-official;
+    
+            location / {
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header Host $host;
+                proxy_set_header X-Forwarded-Server $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_pass http://cytomine-iip-official:8083;
+            }
+        }
+        
+        
+        server {
+            client_max_body_size 0;
+            listen       80;
+            server_name   cytomine-iip-cyto;
+    
+            location / {
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header Host $host;
+                proxy_set_header X-Forwarded-Server $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_pass http://cytomine-iip-cyto:8084;
+            }
+        }
+        
+    }
+---
+# Source: cytomine/templates/web_ui/web_ui-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cytomine-web-ui-config
+data:
+  nginx.conf: |-
+    
+    user  nginx;
+    worker_processes  1;
+    error_log  /var/log/nginx/error.log warn;
+    pid        /var/run/nginx.pid;
+    events {
+      worker_connections  1024;
+    }
+    http {
+      include       /etc/nginx/mime.types;
+      default_type  application/octet-stream;
+      log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+      access_log  /var/log/nginx/access.log  main;
+      sendfile        on;
+      keepalive_timeout  65;
+      server {
+        listen       8080;
+        server_name  cytomine-web-ui;
+        location / {
+          root   /app;
+          index  index.html;
+          try_files $uri $uri/ /index.html;
+        }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+          root   /usr/share/nginx/html;
+        }
+      }
+    }
+    
+  configuration.json: |-
+    
+    {
+      "CYTOMINE_CORE_HOST": "http://cytomine.test",
+      "CYTOMINE_UPLOAD_HOST": "http://cytomine.test",
+      "DIGITAL_ZOOM_INCREMENT": 4,
+      "VIEWER_ANNOTATIONS_REFRESH_INTERVAL": 10000,
+      "MEMBERS_ACTIVITY_REFRESH_INTERVAL": 30000,
+      "STORAGE_REFRESH_INTERVAL": 10000,
+      "ONGOING_UPLOAD_REFRESH_INTERVAL": 500
+    }
+---
+# Source: cytomine/templates/storage/image-storage-claim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cytomine-image-claim
+spec:
+  storageClassName: 
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi
+---
+# Source: cytomine/templates/storage/singularity-storage-claim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cytomine-singularity-claim
+spec:
+  storageClassName: 
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Source: cytomine/templates/storage/temp-image-storage-claim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cytomine-temp-image-claim
+spec:
+  storageClassName: 
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: cytomine/templates/serviceaccount.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: job-creator
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs", "jobs/status"]
+  verbs: ["get", "watch", "list", "create", "delete"]
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "jobs/log"]
+  verbs: ["get", "watch", "list"]
+---
+# Source: cytomine/templates/serviceaccount.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: create-jobs
+subjects:
+- kind: ServiceAccount
+  name: cytomine
+  apiGroup: ""
+roleRef:
+  kind: Role
+  name: job-creator
+  apiGroup: ""
+---
+# Source: cytomine/templates/bioformat/bioformat-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-bioformat
+spec:
+  selector:
+    app: cytomine-bioformat
+  ports:
+    - name: http
+      port: 4321
+      targetPort: 4321
+      protocol: TCP
+---
+# Source: cytomine/templates/core/core-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-core
+spec:
+  selector:
+    app: cytomine-core
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8080
+      protocol: TCP
+---
+# Source: cytomine/templates/iip/iip-cyto-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-iip-cyto
+spec:
+  selector:
+    app: cytomine-iip-cyto
+  ports:
+    - name: http
+      port: 8084
+      targetPort: 8084
+      protocol: TCP
+---
+# Source: cytomine/templates/iip/iip-official-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-iip-official
+spec:
+  selector:
+    app: cytomine-iip-official
+  ports:
+    - name: http
+      port: 8083
+      targetPort: 8083
+      protocol: TCP
+---
+# Source: cytomine/templates/ims/ims-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-ims
+spec:
+  selector:
+    app: cytomine-ims
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8080
+      protocol: TCP
+---
+# Source: cytomine/templates/memcached/memcached-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-memcached
+spec:
+  selector:
+    app: cytomine-memcached
+  ports:
+    - name: memcache
+      port: 11211
+      protocol: TCP
+---
+# Source: cytomine/templates/mongodb/mongodb-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-mongodb
+spec:
+  clusterIP: None
+  selector:
+    app: cytomine-mongodb
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: 27017
+    - name: management
+      port: 28017
+      targetPort: 28017
+---
+# Source: cytomine/templates/nginx/nginx-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-nginx
+spec:
+  selector:
+    app: cytomine-nginx
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+---
+# Source: cytomine/templates/postgresql/postgresql-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-postgis
+spec:
+  clusterIP: None
+  selector:
+    app: cytomine-postgis
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+---
+# Source: cytomine/templates/rabbitmq/rabbitmq-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-rabbitmq
+spec:
+  selector:
+    app: cytomine-rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+      protocol: TCP
+    - name: management
+      port: 15672
+      targetPort: 15672
+      protocol: TCP
+---
+# Source: cytomine/templates/web_ui/web_ui-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cytomine-web-ui
+spec:
+  selector:
+    app: cytomine-web-ui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+# Source: cytomine/templates/bioformat/bioformat.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-bioformat
+  labels:
+    role: bioformat
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-bioformat
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-bioformat
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: bioformat
+        app: cytomine-bioformat
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+        - name: images
+          persistentVolumeClaim:
+            claimName: cytomine-image-claim
+      containers:
+        - name: cytomine-bioformat
+          image: "cytomine/bioformat:v1.2.0"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: images
+              mountPath: "/data/images"
+          env:
+          - name: BIOFORMAT_PORT
+            value: "4321"
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+          livenessProbe:
+            tcpSocket:
+              port: 4321
+            initialDelaySeconds: 30
+            failureThreshold: 10
+            timeoutSeconds: 8
+          readinessProbe:
+            tcpSocket:
+              port: 4321
+            initialDelaySeconds: 30
+            failureThreshold: 10
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+---
+# Source: cytomine/templates/core/core.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-core
+  labels:
+    role: core
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-core
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-core
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: core
+        app: cytomine-core
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+      - name: singularity-images
+        persistentVolumeClaim:
+          claimName: cytomine-singularity-claim
+      - name: core-config
+        secret:
+          secretName: cytomine-core-config
+      containers:
+        - name: cytomine-core
+          image: "cytomine/core:v3.2.3"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: core-config
+              mountPath:  /usr/share/tomcat9/.grails/cytomineconfig.groovy
+              subPath: cytomineconfig.groovy
+            - name: core-config
+              mountPath:  /usr/local/tomcat/conf/server.xml
+              subPath: server.xml
+            - name: singularity-images
+              mountPath: "/data/softwares/images"
+          ports:
+            - name: http
+              containerPort: 8001
+          resources:
+            limits:
+              cpu: 500m
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /server/ping
+              port: 8080
+            initialDelaySeconds: 600
+            failureThreshold: 30
+            timeoutSeconds: 8
+          readinessProbe:
+            httpGet:
+              path: /server/ping
+              port: 8080
+            initialDelaySeconds: 120
+            failureThreshold: 4
+            timeoutSeconds: 5
+---
+# Source: cytomine/templates/iip/iip-cyto.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-iip-cyto
+  labels:
+    role: iip-cyto
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-iip-cyto
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-iip-cyto
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: iip-cyto
+        app: cytomine-iip-cyto
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+        - name: images
+          persistentVolumeClaim:
+            claimName: cytomine-image-claim
+        - name: nginx-config
+          configMap:
+            name: cytomine-iip-cyto-config
+      containers:
+        - name: cytomine-iip-cyto
+          image: "cytomine/iipcyto:v1.2.3"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: images
+              mountPath: "/data/images"
+            - name: nginx-config
+              mountPath: /config-temp/nginx.conf.sample
+              subPath: nginx.conf.sample
+          command: ["/bin/sh"]
+          args: ["-c", "cp /config-temp/nginx.conf.sample /tmp/nginx.conf.sample && /tmp/deploy.sh"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+          env:
+          - name: NB_IIP_PROCESS
+            value: "10"
+          - name: MEMCACHED_SERVERS
+            value: cytomine-memcached:11211
+          ports:
+            - name: http
+              containerPort: 8084
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+---
+# Source: cytomine/templates/iip/iip-official.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-iip-official
+  labels:
+    role: iip-official
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-iip-official
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-iip-official
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: iip-official
+        app: cytomine-iip-official
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+        - name: images
+          persistentVolumeClaim:
+            claimName: cytomine-image-claim
+        - name: nginx-config
+          configMap:
+            name: cytomine-iip-official-config
+      containers:
+        - name: cytomine-iip-official
+          image: "cytomine/iipofficial:v1.3.0"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: images
+              mountPath: "/data/images"
+            - name: nginx-config
+              mountPath: /config-temp/nginx.conf.sample
+              subPath: nginx.conf.sample
+          command: ["/bin/sh"]
+          args: ["-c", "cp /config-temp/nginx.conf.sample /tmp/nginx.conf.sample && /tmp/deploy.sh"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+          env:
+          - name: NB_IIP_PROCESS
+            value: "10"
+          - name: MEMCACHED_SERVERS
+            value: cytomine-memcached:11211
+          ports:
+            - name: http
+              containerPort: 8083
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+---
+# Source: cytomine/templates/ims/ims.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-ims
+  labels:
+    role: ims
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-ims
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-ims
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: ims
+        app: cytomine-ims
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+        - name: images
+          persistentVolumeClaim:
+            claimName: cytomine-image-claim
+        - name: image-temp
+          persistentVolumeClaim:
+            claimName: cytomine-temp-image-claim
+        - name: ims-config
+          secret:
+            secretName: cytomine-ims-config
+      containers:
+        - name: cytomine-ims
+          image: "cytomine/ims:v2.0.0"
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+          # livenessProbe:
+          #   initialDelaySeconds: 600
+          #   failureThreshold: 30
+          #   periodSeconds: 8
+          #   httpGet:
+          #     path: /
+          #     port: 8080
+          # readinessProbe:
+          #   failureThreshold: 4
+          #   initialDelaySeconds: 150
+          #   periodSeconds: 10
+          #   httpGet:
+          #     path: /
+          #     port: 8080
+          volumeMounts:
+            - name: images
+              mountPath: "/data/images"
+            - name: image-temp
+              mountPath: "/tmp/uploaded"
+            - name: ims-config
+              mountPath: /usr/share/tomcat9/.grails/ims-config.groovy
+              subPath: ims-config.groovy
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+          - name: IMS_STORAGE_PATH
+            value: /data/images
+          resources:
+            limits:
+              cpu: 200m
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 2Gi
+---
+# Source: cytomine/templates/memcached/memcached.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-memcached
+  labels:
+    role: memcached
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-memcached
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-memcached
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: memcached
+        app: cytomine-memcached
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+      - name: cytomine-memcached-config
+        configMap:
+          name: cytomine-memcached-config
+      containers:
+        - name: cytomine-memcached
+          image: "cytomine/memcached:v1.2.0"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: cytomine-memcached-config
+              mountPath: /etc/memcached.conf
+              subPath: memcached.conf
+          ports:
+            - name: memcache
+              containerPort: 11211
+          command: ["/usr/bin/memcached"]
+          args: ["-p", "11211"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 256Mi
+          livenessProbe:
+            tcpSocket:
+              port: memcache
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: memcache
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+---
+# Source: cytomine/templates/nginx/nginx.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-nginx
+  labels:
+    role: nginx
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-nginx
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-nginx
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: nginx
+        app: cytomine-nginx
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+      - name: cytomine-nginx-config
+        configMap:
+          name: cytomine-nginx-config
+      - name: image-temp
+        persistentVolumeClaim:
+          claimName: cytomine-temp-image-claim
+      containers:
+        - name: cytomine-nginx
+          image: "cytomine/nginx:v1.4.0"
+          imagePullPolicy: Always
+          command: ["/usr/local/nginx/sbin/nginx"]
+          volumeMounts:
+            - name: cytomine-nginx-config
+              mountPath: /usr/local/nginx/conf/nginx.conf
+              subPath: nginx.conf
+            - name: image-temp
+              mountPath: "/tmp/uploaded"
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+          ports:
+            - name: http
+              containerPort: 8000
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+---
+# Source: cytomine/templates/rabbitmq/rabbitmq.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-rabbitmq
+  labels:
+    role: rabbitmq
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-rabbitmq
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-rabbitmq
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: rabbitmq
+        app: cytomine-rabbitmq
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+        - name: rabbitmq-secret
+          secret:
+            defaultMode: 0755
+            secretName: cytomine-rabbitmq-secret
+        - name: rabbitmq-log
+          emptyDir: {}
+      containers:
+        - name: cytomine-rabbitmq
+          image: "cytomine/rabbitmq:v1.2.0"
+          imagePullPolicy: Always
+          env:
+          - name: RABBITMQ_PID_FILE
+            value: "/var/lib/rabbitmq/mnesia/rabbit@c12b9c650697.pid"
+          volumeMounts:
+            - name: rabbitmq-secret
+              mountPath: /init.sh
+              subPath: init.sh
+            - name: rabbitmq-log
+              mountPath: "/var/log/rabbitmq"
+          command: ["/bin/bash"]
+          args: ["-c", "/init.sh"]
+          ports:
+            - name: amqp
+              containerPort: 5672
+              protocol: TCP
+            - name: management
+              containerPort: 15672
+          securityContext:
+            runAsUser: 102
+          resources:
+            limits:
+              cpu: 400m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          livenessProbe:
+            tcpSocket:
+              port: amqp
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: amqp
+            initialDelaySeconds: 30
+            timeoutSeconds: 15
+---
+# Source: cytomine/templates/software_router/k8s-software-router.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-k8s-software-router
+  labels:
+    role: software-router
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-k8s-software-router
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-k8s-software-router
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: software-router
+        app: cytomine-k8s-software-router
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+        - name: k8s-software-router-secret
+          secret:
+            defaultMode: 0400
+            secretName: cytomine-k8s-software-router-secret
+      containers:
+        - name: cytomine-k8s-software-router
+          image: "norling/k8s-software-router:latest"
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - pgrep
+                - python3
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+          volumeMounts:
+            - name: k8s-software-router-secret
+              mountPath: /app/settings.yaml
+              subPath: settings.yaml
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+---
+# Source: cytomine/templates/web_ui/web_ui.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cytomine-web-ui
+  labels:
+    role: web-ui
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-web-ui
+    release: cytomine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cytomine-web-ui
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: web-ui
+        app: cytomine-web-ui
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      volumes:
+      - name: cytomine-web-ui-config
+        configMap:
+          name: cytomine-web-ui-config
+      containers:
+        - name: cytomine-web-ui
+          image: "cytomine/web_ui:v1.4.0"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: cytomine-web-ui-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: cytomine-web-ui-config
+              mountPath: /app/configuration.json
+              subPath: configuration.json
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+---
+# Source: cytomine/templates/mongodb/mongodb.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cytomine-mongodb
+  labels:
+    role: mongodb
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-mongodb
+    release: cytomine
+spec:
+  replicas: 1
+  serviceName: cytomine-mongodb
+  selector:
+    matchLabels:
+      app: cytomine-mongodb
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: mongodb
+        app: cytomine-mongodb
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      containers:
+        - name: cytomine-mongodb
+          image: "mongodb:4.4.18-focal"
+          imagePullPolicy: Always
+          command: ["mongod"]
+          volumeMounts:
+            - name: mongodb-storage
+              mountPath: "/data/db"
+          ports:
+            - name: mongodb
+              containerPort: 27017
+              protocol: TCP
+            - name: status
+              containerPort: 28017
+              protocol: TCP
+          env:
+            - name: MONGO_INIT_DATABASE
+              value: "cytomine"
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: username
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 15
+            periodSeconds: 60
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 256Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-storage
+      spec:
+        storageClassName: 
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+---
+# Source: cytomine/templates/postgresql/postgresql.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cytomine-postgis
+  labels:
+    role: postgresql
+    app: cytomine
+    chart: cytomine-0.2.0
+    component: cytomine-postgis
+    release: cytomine
+spec:
+  replicas: 1
+  serviceName: cytomine-postgis
+  selector:
+    matchLabels:
+      app: cytomine-postgis
+      release: cytomine
+  template:
+    metadata:
+      labels:
+        role: postgresql
+        app: cytomine-postgis
+        release: cytomine
+    spec:
+      serviceAccountName: cytomine
+      containers:
+        - name: cytomine-postgis
+          image: "cytomine/postgis:v2.1.0"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: "/postgres-data/"
+          command: ["/bin/bash"]
+          # if the persistent volume seems empty, copy the data from the default
+          # to the persistent volume, then start postgres using it.
+          args:
+            - -x
+            - -c
+            - >
+                [ ! -f /postgres-data/main/PG_VERSION ] &&
+                mkdir -p /postgres-data/main &&
+                cp -r /var/lib/postgresql/10/main/* /postgres-data/main &&
+                chmod og-rwx /postgres-data/main;
+                mkdir -p /tmp/pgconf &&
+                cp -r /etc/postgresql/10/main/* /tmp/pgconf &&
+                sed -i -e s,/var/lib/postgresql/10,/postgres-data,
+                /tmp/pgconf/postgresql.conf &&
+                /usr/lib/postgresql/10/bin/postgres -D /postgres-data/main
+                -c config_file=/tmp/pgconf/postgresql.conf
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          securityContext:
+             runAsUser: 101
+          livenessProbe:
+            exec:
+              command:
+              - pg_isready
+              - -h
+              - localhost
+              - -U
+              - psql
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 256Mi
+          readinessProbe:
+            exec:
+              command:
+              - pg_isready
+              - -h
+              - localhost
+              - -U
+              - psql
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-storage
+      spec:
+        storageClassName: 
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 3Gi
+---
+# Source: cytomine/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cytomine-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 2000m
+spec:
+  rules:
+    - host: cytomine.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cytomine-nginx
+                port:
+                  number: 8000
