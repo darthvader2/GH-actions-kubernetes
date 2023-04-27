@@ -13,6 +13,5 @@ jobs:
         - name: Run kube-score
           run: |
               wget https://github.com/zegl/kube-score/releases/download/v1.16.1/kube-score_1.16.1_linux_amd64.tar.gz && \ 
-              sudo tar xvf ./kube-score_1.16.1_linux_amd64.tar.gz && mv kube-score /usr/local/bin && \
-              kube-score
+              tar xvf ./kube-score_1.16.1_linux_amd64.tar.gz && mv kube-score /usr/local/bin 
               
