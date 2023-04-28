@@ -4,15 +4,28 @@ on: [push, workflow_dispatch, pull_request]
 
 jobs:
   kube-score:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
         - name: Checkout
           uses: actions/checkout@v3
           with:
             fetch-depth: 0
-        - name: Run kube-score
+        - uses: actions/checkout@v2
+        - name: Load from cache
+          id: ks
+          uses: actions/cache@v1
+          with:
+            path: kube-score
+            key: kube-score
+        - name: Download kube-score
+          if: steps.ks.outputs.cache-hit != 'true'
           run: |
               wget https://github.com/zegl/kube-score/releases/download/v1.16.1/kube-score_1.16.1_linux_amd64.tar.gz
               tar xvf ./kube-score_1.16.1_linux_amd64.tar.gz && mv kube-score /usr/local/bin
+        - name: Move kube-score
+          run: |
+              mv kube-score /usr/local/bin
+        - name: Run kube-score
+          run: |
               helm template hello-world . | kube-score score - 
               
